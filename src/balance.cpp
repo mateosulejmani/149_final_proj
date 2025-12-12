@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include "MPU9250.h" 
 
+
 // EXTERNAL HARDWARE GLOBALS (Defined in Main.ino)
 extern MPU9250 myIMU; 
 
@@ -23,36 +24,35 @@ bool isBalancing() { return isBalancingStatus; }
 bool balanceUpdateDelayed() { return balanceUpdateDelayedStatus; }
 
 float getAccelAngle() {
-    // Read fresh data
+    // Read data
     myIMU.readAccelData(myIMU.accelCount);
     
-    // Convert to G-Force (floats)
+    // Get y and z reads from accelerometer
     float ay = (float)myIMU.accelCount[1];
     float az = (float)myIMU.accelCount[2];
     
-    // YOUR FORMULA: atan2(ay, az)
-    // We convert to Degrees ( * 180/PI )
+    // Convert accelerometer data to tilt
     float rawAngle = atan2(ay, az) * 57.296; 
-    //Serial.println(rawAngle);
-
-    // If rawAngle is -7.0 when upright, and OFFSET is -7.0:
-    // -7.0 - (-7.0) = 0.0 (Perfect Vertical)
-    return (rawAngle - VERTICAL_ANGLE_OFFSET); 
+    
+    // Apply offset to angle so upright is at 0 degrees
+    // Apply negative sign to make forward be positive angle
+    return -(rawAngle - VERTICAL_ANGLE_OFFSET); 
 }
 
 void balanceSetup()
 {
   int32_t total = 0;
+  // Get x readings from gyro to find its offset
   for (int i = 0; i < CALIBRATION_ITERATIONS; i++)
   {
     if(myIMU.readByte(MPU9250_ADDRESS_AD0, INT_STATUS) & 0x01) {
         myIMU.readGyroData(myIMU.gyroCount);
-        // We use X-Axis Gyro because your Angle is atan2(y, z)
-        // (Rotation around X changes Y and Z)
+        // Keep still and measure x-axis gyro noise
         total += myIMU.gyroCount[0]; 
     }
     delay(UPDATE_TIME_MS);
   }
+  // Finding the offset of our gyro.
   gYZero = total / CALIBRATION_ITERATIONS;
 }
 
@@ -66,7 +66,7 @@ void lyingDown()
 
   // If robot is calm (gyro showing little rotation)
   // We snap the angle to the Accelerometer's gravity vector
-  if (abs(angleRate) < 2) 
+  if (abs(angleRate) < 20) //Was2
   {
     // Convert float angle to Millidegrees for the PID
     angle = (int32_t)(getAccelAngle() * 1000); 
@@ -75,39 +75,41 @@ void lyingDown()
 
 void integrateGyro()
 {
-  // 1. Read Gyro
-  // Ensure we read the axis perpendicular to your Y/Z plane (Usually X)
+  // Read gyro data
   myIMU.readGyroData(myIMU.gyroCount);
   
-  // Convert to deg/s (using 2000dps scale typical of these libs, ~16.4 LSB/deg/s)
-  // We use raw counts relative to the calibrated zero
-  // 29 is roughly the divider for 1000deg/s scale to match Pololu units
-  angleRate = (myIMU.gyroCount[0] - gYZero) / 29; 
+  // Apply offset to x-axis gyro data and divide by 32768/1000
+  // 32768 is the max ADC count and MPU set to reach this when moving 1000 degrees per second
+  angleRate = (myIMU.gyroCount[0] - gYZero) / 32.8; 
 
-  // 2. Integrate Gyro (Angle = Angle + Rate * Time)
+  // Gyro angle is our last angle + our current changed angle calculated from gyro
   int32_t gyroAngle = angle + angleRate * UPDATE_TIME_MS;
 
-  // 3. Read Accel for Drift Correction (Complementary Filter)
+  // Get accelerometer angle
   int32_t accelAngle = (int32_t)(getAccelAngle() * 1000);
 
-  // 4. Fuse them (95% Gyro, 5% Accel)
+  // Combine accelerometer angle and gyro angle to account for gyro drift
   angle = (gyroAngle * 95 + accelAngle * 5) / 100;
 }
 
 void integrateEncoders()
 {
+  // Find how much the encoders have changed from last update
+  // update the distance we are from center, and the last encoder count
   static long lastCountsLeft;
   long countsLeft = getLeftEncoderCounts();
   speedLeft = (countsLeft - lastCountsLeft);
-  distanceLeft += countsLeft - lastCountsLeft;
+  distanceLeft += speedLeft;
   lastCountsLeft = countsLeft;
-
 
   static long lastCountsRight;
   long countsRight = getRightEncoderCounts();
   speedRight = (countsRight - lastCountsRight);
-  distanceRight += countsRight - lastCountsRight;
+  distanceRight += speedRight;
   lastCountsRight = countsRight;
+
+  // Serial.println(countsRight);
+  // Serial.println(countsLeft);
 }
 
 void balance()

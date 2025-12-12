@@ -32,17 +32,15 @@ volatile long leftCount = 0;
 volatile long rightCount = 0;
 
 void IRAM_ATTR leftEncoderISR() {
-  // If the B pin state equals the A pin state, we are going one way, else the other.
-  // Standard quadrature logic check.
   int b_val = digitalRead(LEFT_ENC_B);
-  if (b_val == LOW) leftCount++; 
-  else leftCount--;
+  if (b_val == LOW) leftCount++;  // Changed to ++
+  else leftCount--;               // Changed to --
 }
 
 void IRAM_ATTR rightEncoderISR() {
   int b_val = digitalRead(RIGHT_ENC_B);
-  if (b_val == LOW) rightCount++; 
-  else rightCount--;
+  if (b_val == LOW) rightCount--; 
+  else rightCount++;
 }
 
 // Get the amount of ticks for the left encoder
@@ -78,11 +76,13 @@ void setMotorSpeeds(int16_t leftSpeed, int16_t rightSpeed) {
 
   // RIGHT MOTOR
   if (rightSpeed > 0) {
-    digitalWrite(RIGHT_IN1, HIGH); // If wheel spins wrong way, swap LOW/HIGH here
-    digitalWrite(RIGHT_IN2, LOW);
-  } else if (rightSpeed < 0) {
-    digitalWrite(RIGHT_IN1, LOW);
+    // FIXED: Swapped HIGH/LOW to match your test code
+    digitalWrite(RIGHT_IN1, LOW);  
     digitalWrite(RIGHT_IN2, HIGH);
+  } else if (rightSpeed < 0) {
+    // FIXED: Swapped HIGH/LOW
+    digitalWrite(RIGHT_IN1, HIGH);
+    digitalWrite(RIGHT_IN2, LOW);
   } else {
     digitalWrite(RIGHT_IN1, LOW);
     digitalWrite(RIGHT_IN2, LOW);
@@ -159,3 +159,157 @@ void loop() {
 
 
 
+
+
+
+
+
+
+
+
+// // #include <Arduino.h>
+
+// // ================= PIN DEFINITIONS =================
+// // Left Motor
+// const int RIGHT_PWM = 14;
+// const int RIGHT_IN1 = 12;
+// const int RIGHT_IN2 = 13;
+// const int RIGHT_ENC_A = 5;   
+// const int RIGHT_ENC_B = 17;   
+
+// // --- Left Motor ---
+// const int LEFT_PWM  = 25;
+// const int LEFT_IN1  = 26;
+// const int LEFT_IN2  = 27;
+// const int LEFT_ENC_A = 19;   
+// const int LEFT_ENC_B = 18;   
+
+// // ================= VARIABLES =================
+
+// // Volatile is required because these change inside interrupts
+// volatile long rightCount = 0;
+// volatile long leftCount = 0;
+
+// // ================= INTERRUPT SERVICE ROUTINES =================
+
+// // RIGHT ENCODER ISR
+// void IRAM_ATTR readRightEncoderISR() {
+//   int bState = digitalRead(RIGHT_ENC_B);
+
+//   // We swapped this logic based on your test results
+//   // Now LOW = Count DOWN, HIGH = Count UP (Adjusted to make Forward positive)
+//   if (bState == LOW) {
+//     rightCount--; 
+//   } else {
+//     rightCount++; 
+//   }
+// }
+
+// // LEFT ENCODER ISR
+// void IRAM_ATTR readLeftEncoderISR() {
+//   int bState = digitalRead(LEFT_ENC_B);
+
+//   // Standard Logic (If Left counts negative when moving forward, swap these ++ and --)
+//   if (bState == LOW) {
+//     leftCount++; 
+//   } else {
+//     leftCount--; 
+//   }
+// }
+
+// // ================= SETUP =================
+
+// void setup() {
+//   Serial.begin(115200);
+
+//   // --- Motor Pins ---
+//   pinMode(RIGHT_PWM, OUTPUT);
+//   pinMode(RIGHT_IN1, OUTPUT);
+//   pinMode(RIGHT_IN2, OUTPUT);
+  
+//   pinMode(LEFT_PWM, OUTPUT);
+//   pinMode(LEFT_IN1, OUTPUT);
+//   pinMode(LEFT_IN2, OUTPUT);
+
+//   // --- Encoder Pins (INPUT_PULLUP is critical) ---
+//   pinMode(RIGHT_ENC_A, INPUT_PULLUP);
+//   pinMode(RIGHT_ENC_B, INPUT_PULLUP);
+//   pinMode(LEFT_ENC_A, INPUT_PULLUP);
+//   pinMode(LEFT_ENC_B, INPUT_PULLUP);
+
+//   // --- Attach Interrupts ---
+//   // ESP32 monitors Pin A on both sides. When Pin A rises, it runs the ISR.
+//   attachInterrupt(digitalPinToInterrupt(RIGHT_ENC_A), readRightEncoderISR, RISING);
+//   attachInterrupt(digitalPinToInterrupt(LEFT_ENC_A), readLeftEncoderISR, RISING);
+
+//   Serial.println("=== DUAL MOTOR ENCODER TEST START ===");
+// }
+
+// // ================= LOOP =================
+
+// void loop() {
+  
+//   // -------------------------------------------------
+//   // 1. DRIVE FORWARD
+//   // -------------------------------------------------
+//   Serial.println(">>> Driving FORWARD...");
+  
+//   // Right Motor Forward
+//   digitalWrite(RIGHT_IN1, LOW);
+//   digitalWrite(RIGHT_IN2, HIGH);
+//   analogWrite(RIGHT_PWM, 150);
+
+//   // Left Motor Forward
+//   digitalWrite(LEFT_IN1, LOW);
+//   digitalWrite(LEFT_IN2, HIGH);
+//   analogWrite(LEFT_PWM, 150);
+
+//   // Monitor for 2 seconds
+//   for(int i=0; i<20; i++) {
+//     Serial.print("Left: ");
+//     Serial.print(leftCount);
+//     Serial.print("\t Right: ");
+//     Serial.println(rightCount);
+//     delay(100);
+//   }
+
+//   // -------------------------------------------------
+//   // 2. STOP
+//   // -------------------------------------------------
+//   Serial.println(">>> STOPPING...");
+//   analogWrite(RIGHT_PWM, 0);
+//   analogWrite(LEFT_PWM, 0);
+//   delay(1000); 
+
+//   // -------------------------------------------------
+//   // 3. DRIVE BACKWARD
+//   // -------------------------------------------------
+//   Serial.println(">>> Driving BACKWARD...");
+
+//   // Right Motor Backward
+//   digitalWrite(RIGHT_IN1, HIGH);
+//   digitalWrite(RIGHT_IN2, LOW);
+//   analogWrite(RIGHT_PWM, 150);
+
+//   // Left Motor Backward
+//   digitalWrite(LEFT_IN1, HIGH);
+//   digitalWrite(LEFT_IN2, LOW);
+//   analogWrite(LEFT_PWM, 150);
+
+//   // Monitor for 2 seconds
+//   for(int i=0; i<20; i++) {
+//     Serial.print("Left: ");
+//     Serial.print(leftCount);
+//     Serial.print("\t Right: ");
+//     Serial.println(rightCount);
+//     delay(100);
+//   }
+
+//   // -------------------------------------------------
+//   // 4. STOP
+//   // -------------------------------------------------
+//   Serial.println(">>> STOPPING...");
+//   analogWrite(RIGHT_PWM, 0);
+//   analogWrite(LEFT_PWM, 0);
+//   delay(2000);
+// }
