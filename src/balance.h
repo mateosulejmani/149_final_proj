@@ -5,21 +5,21 @@
 
 const float GEAR_RATIO = 43.8; 
 const int16_t MOTOR_SPEED_LIMIT = 250; 
-const int16_t ANGLE_RATE_RATIO = 80;
+const int16_t ANGLE_RATE_RATIO = 150;
 
 // *** MECHANICAL OFFSET ***
-const float VERTICAL_ANGLE_OFFSET = 8.7;
+const float VERTICAL_ANGLE_OFFSET = 7;
 
 // PID constants
 // determines the response to a combination of angle and angle_rate
 // the combination measures how far the robot is from a stable trajectory
-const int16_t ANGLE_RESPONSE = 13;
+const int16_t ANGLE_RESPONSE = 40;
 // determines how much the robot resists being moved away from its starting point.
-const int16_t DISTANCE_RESPONSE =20; //55
+const int16_t DISTANCE_RESPONSE =80; //55
 // determines the response to differences between the left and right motors
-const int16_t DISTANCE_DIFF_RESPONSE = -30; //-60
+const int16_t DISTANCE_DIFF_RESPONSE = -60; //-50
 // supresses the large back-and-forth oscillations caused by DISTANCE_RESPONSE
-const int16_t SPEED_RESPONSE = 6000; //6800
+const int16_t SPEED_RESPONSE = 0; //5000
 
 // Update rate
 const uint8_t UPDATE_TIME_MS = 5;

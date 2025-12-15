@@ -113,27 +113,31 @@ void MPU9250::getAres()
 
 void MPU9250::readAccelData(int16_t * destination)
 {
-  uint8_t rawData[6];  // x/y/z accel register data stored here
+  uint8_t rawData[6] = {0, 0, 0, 0, 0, 0}; // Initialize to 0 to prevent garbage data usage
+  
   // Read the six raw data registers into data array
-  readBytes(_I2Caddr, ACCEL_XOUT_H, 6, &rawData[0]);
-
-  // Turn the MSB and LSB into a signed 16-bit value
-  destination[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;
-  destination[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;
-  destination[2] = ((int16_t)rawData[4] << 8) | rawData[5] ;
+  // Only update destination if we successfully read 6 bytes
+  if (readBytes(_I2Caddr, ACCEL_XOUT_H, 6, &rawData[0]) == 6) {
+    // Turn the MSB and LSB into a signed 16-bit value
+    destination[0] = ((int16_t)rawData[0] << 8) | rawData[1];
+    destination[1] = ((int16_t)rawData[2] << 8) | rawData[3];
+    destination[2] = ((int16_t)rawData[4] << 8) | rawData[5];
+  }
 }
 
 
 void MPU9250::readGyroData(int16_t * destination)
 {
-  uint8_t rawData[6];  // x/y/z gyro register data stored here
+  uint8_t rawData[6] = {0, 0, 0, 0, 0, 0}; // Initialize to 0
+  
   // Read the six raw data registers sequentially into data array
-  readBytes(_I2Caddr, GYRO_XOUT_H, 6, &rawData[0]);
-
-  // Turn the MSB and LSB into a signed 16-bit value
-  destination[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;
-  destination[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;
-  destination[2] = ((int16_t)rawData[4] << 8) | rawData[5] ;
+  // Only update destination if we successfully read 6 bytes
+  if (readBytes(_I2Caddr, GYRO_XOUT_H, 6, &rawData[0]) == 6) {
+    // Turn the MSB and LSB into a signed 16-bit value
+    destination[0] = ((int16_t)rawData[0] << 8) | rawData[1];
+    destination[1] = ((int16_t)rawData[2] << 8) | rawData[3];
+    destination[2] = ((int16_t)rawData[4] << 8) | rawData[5];
+  }
 }
 
 void MPU9250::readMagData(int16_t * destination)

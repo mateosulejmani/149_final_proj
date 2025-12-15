@@ -42,18 +42,17 @@ float getAccelAngle() {
 void balanceSetup()
 {
   int32_t total = 0;
-  // Get x readings from gyro to find its offset
+  int samples = 0;
   for (int i = 0; i < CALIBRATION_ITERATIONS; i++)
   {
     if(myIMU.readByte(MPU9250_ADDRESS_AD0, INT_STATUS) & 0x01) {
         myIMU.readGyroData(myIMU.gyroCount);
-        // Keep still and measure x-axis gyro noise
         total += myIMU.gyroCount[0]; 
+        samples++; // Count valid samples
     }
     delay(UPDATE_TIME_MS);
   }
-  // Finding the offset of our gyro.
-  gYZero = total / CALIBRATION_ITERATIONS;
+  if (samples > 0) gYZero = total / samples;
 }
 
 void lyingDown()
@@ -89,7 +88,7 @@ void integrateGyro()
   int32_t accelAngle = (int32_t)(getAccelAngle() * 1000);
 
   // Combine accelerometer angle and gyro angle to account for gyro drift
-  angle = (gyroAngle * 95 + accelAngle * 5) / 100;
+  angle = (gyroAngle * 99 + accelAngle * 1) / 100;
 }
 
 void integrateEncoders()
@@ -112,26 +111,34 @@ void integrateEncoders()
   // Serial.println(countsLeft);
 }
 
+const int16_t MIN_POWER = 30;
 void balance()
 {
   // Standard Balboa PID Logic
-  int32_t risingAngleOffset = angleRate * ANGLE_RATE_RATIO + angle;
+  int32_t pdOutput = (angle * ANGLE_RESPONSE) + (angleRate * ANGLE_RATE_RATIO);
+  
+  // Scale down (remove the /GEAR_RATIO if it makes it too weak)
+  motorSpeed = pdOutput / 100 / GEAR_RATIO;
 
-  motorSpeed += (
-    + ANGLE_RESPONSE * risingAngleOffset
-    + DISTANCE_RESPONSE * (distanceLeft + distanceRight)
-    + SPEED_RESPONSE * (speedLeft + speedRight)
-    ) / 100 / GEAR_RATIO;
+  // 2. Deadband Compensation (The Fix for "Falling Over")
+  if (motorSpeed > 0) {
+    motorSpeed += MIN_POWER;
+  } else if (motorSpeed < 0) {
+    motorSpeed -= MIN_POWER;
+  }
 
+  // 3. Constrain to limits
   if (motorSpeed > MOTOR_SPEED_LIMIT) motorSpeed = MOTOR_SPEED_LIMIT;
   if (motorSpeed < -MOTOR_SPEED_LIMIT) motorSpeed = -MOTOR_SPEED_LIMIT;
 
+  // 4. Differential Drive (Steering)
   int16_t distanceDiff = distanceLeft - distanceRight;
-
+  
   setMotorSpeeds(
     motorSpeed + distanceDiff * DISTANCE_DIFF_RESPONSE / 100,
     motorSpeed - distanceDiff * DISTANCE_DIFF_RESPONSE / 100
   );
+  Serial.print(motorSpeed);
 }
 
 void balanceUpdate()

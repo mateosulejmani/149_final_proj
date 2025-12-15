@@ -1,4 +1,4 @@
-// Imports
+// // Imports
 #include <Arduino.h>
 #include <Wire.h>
 #include "MPU9250.h" 
@@ -19,7 +19,7 @@ const int RIGHT_IN1 = 12;
 const int RIGHT_IN2 = 13;
 
 // NEW ENCODER PIN MAPPING
-const int RIGHT_ENC_B = 17;   
+const int RIGHT_ENC_B = 23;   
 const int LEFT_ENC_B  = 18;   
 const int RIGHT_ENC_A = 5;   
 const int LEFT_ENC_A  = 19;   
@@ -146,11 +146,11 @@ void loop() {
   if (millis() - lastPrint > 200) {
     lastPrint = millis();
     if(isBalancing()) {
-       Serial.print("BALANCING! Angle: "); Serial.println(angle / 1000.0);
+       // Serial.print("BALANCING! Angle: "); Serial.println(angle / 1000.0);
     } else {
        // While lying down, this should read ~90.0 or ~-90.0
        // When you lift it up, watch it go to 0.0
-       Serial.print("Lying Down. Angle: "); Serial.println(angle / 1000.0);
+       // Serial.print("Lying Down. Angle: "); Serial.println(angle / 1000.0);
     }
   }
 }
@@ -167,7 +167,7 @@ void loop() {
 
 
 
-// // #include <Arduino.h>
+// #include <Arduino.h>
 
 // // ================= PIN DEFINITIONS =================
 // // Left Motor
@@ -175,7 +175,7 @@ void loop() {
 // const int RIGHT_IN1 = 12;
 // const int RIGHT_IN2 = 13;
 // const int RIGHT_ENC_A = 5;   
-// const int RIGHT_ENC_B = 17;   
+// const int RIGHT_ENC_B = 23;   
 
 // // --- Left Motor ---
 // const int LEFT_PWM  = 25;
